@@ -1,4 +1,13 @@
 "use strict";
+var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
+    if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
+        if (ar || !(i in from)) {
+            if (!ar) ar = Array.prototype.slice.call(from, 0, i);
+            ar[i] = from[i];
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from));
+};
 var PREFIX = "~";
 /**
  * Gets all own properties and symbols.
@@ -42,6 +51,7 @@ var EventEmitter = /** @class */ (function () {
     Object.defineProperty(EventEmitter.prototype, "_eventsCount", {
         /**
          * Only exists for compatibility with eventemitter3 unit tests.
+         * Don't know what to do with types
          */
         get: function () {
             return getAllOwn(this._events).length;
@@ -52,6 +62,7 @@ var EventEmitter = /** @class */ (function () {
     /**
      * Return an array listing the events for which the emitter has registered
      * listeners.
+     * Don't know what to do with types
      */
     EventEmitter.prototype.eventNames = function () {
         var _this = this;
@@ -60,8 +71,8 @@ var EventEmitter = /** @class */ (function () {
     /**
      * Return the listeners registered for a given event.
      */
-    EventEmitter.prototype.listeners = function (event) {
-        event = this.doPrefix(event);
+    EventEmitter.prototype.listeners = function (iEvent) {
+        var event = this.doPrefix(iEvent);
         var events = this._events[event];
         return events ? events.map(function (e) { return e.fn; }) : [];
     };
@@ -76,23 +87,26 @@ var EventEmitter = /** @class */ (function () {
     /**
      * Calls each of the listeners registered for a given event.
      */
-    EventEmitter.prototype.emit = function (event) {
+    EventEmitter.prototype.emit = function (iEvent) {
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        event = this.doPrefix(event);
+        var event = this.doPrefix(iEvent);
         var events = this._events[event];
         if (!events || !events.length) {
             return false;
         }
+        var eventInfo = { shouldCancel: false };
         for (var i = 0; i < events.length; i++) {
             var currentEvent = events[i];
             if (currentEvent.once) {
                 events.splice(i, 1);
                 i--;
             }
-            currentEvent.fn.apply(currentEvent.context, args);
+            currentEvent.fn.apply(currentEvent.context, __spreadArray([eventInfo], args, true));
+            if (eventInfo.shouldCancel)
+                break;
         }
         if (events.length === 0) {
             delete this._events[event];
@@ -116,12 +130,12 @@ var EventEmitter = /** @class */ (function () {
     /**
      * Add a listener for a given event.
      */
-    EventEmitter.prototype.addEventListener = function (event, fn, context, once, priority) {
+    EventEmitter.prototype.addEventListener = function (iEvent, fn, context, once, priority) {
         if (priority === void 0) { priority = 0; }
         if (typeof fn !== "function") {
-            throw new TypeError('The listener must be a function');
+            throw new TypeError("The listener must be a function");
         }
-        event = this.doPrefix(event);
+        var event = this.doPrefix(iEvent);
         var events = this._events[event] || [];
         events.push({ context: context, fn: fn, priority: priority, once: !!once });
         this.sort(events);
@@ -137,26 +151,26 @@ var EventEmitter = /** @class */ (function () {
     /**
      * Remove the listeners of a given event.
      */
-    EventEmitter.prototype.removeEventListener = function (event, fn, context, once, priority) {
+    EventEmitter.prototype.removeEventListener = function (iEvent, fn, context, once, priority) {
         if (!fn) {
-            this.removeAllListeners(event);
+            this.removeAllListeners(iEvent);
         }
         else {
-            event = this.doPrefix(event);
-            var events = this._events[event];
+            var event_1 = this.doPrefix(iEvent);
+            var events = this._events[event_1];
             if (events) {
                 for (var i = 0; i < events.length; i++) {
                     var currentEvent = events[i];
-                    if (currentEvent.fn === fn
-                        && (!context || currentEvent.context === context)
-                        && (!once || currentEvent.once === once)
-                        && (!priority || currentEvent.priority === priority)) {
+                    if (currentEvent.fn === fn &&
+                        (!context || currentEvent.context === context) &&
+                        (!once || currentEvent.once === once) &&
+                        (!priority || currentEvent.priority === priority)) {
                         events.splice(i, 1);
                         i--;
                     }
                 }
                 if (events.length === 0) {
-                    delete this._events[event];
+                    delete this._events[event_1];
                 }
             }
         }
@@ -181,7 +195,7 @@ var EventEmitter = /** @class */ (function () {
      */
     EventEmitter.prototype.doPrefix = function (name) {
         if (typeof name === "string" && this.prefix) {
-            return this.prefix + name;
+            return (this.prefix + name);
         }
         return name;
     };

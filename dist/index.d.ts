@@ -1,5 +1,7 @@
-interface ListenerFn {
-    (...args: any[]): void;
+interface ListenerFn<T extends any[]> {
+    (eventInfo: {
+        shouldCancel: boolean;
+    }, ...args: T): void;
 }
 /**
  * The priority of an event. The lower the value the high the priority.
@@ -16,7 +18,9 @@ declare enum Priority {
 /**
  * The event emitter class. You can either instatiate it directly or subclass it.
  */
-declare class EventEmitter<EventTypes extends string | symbol = string | symbol> {
+declare class EventEmitter<EventTypes extends {
+    [event: string | symbol]: (...args: any[]) => void;
+}> {
     /**
      * Allow `EventEmitter` to be imported as module namespace.
      */
@@ -39,49 +43,51 @@ declare class EventEmitter<EventTypes extends string | symbol = string | symbol>
     prefix: string | false;
     /**
      * Only exists for compatibility with eventemitter3 unit tests.
+     * Don't know what to do with types
      */
     protected get _eventsCount(): number;
     /**
      * Return an array listing the events for which the emitter has registered
      * listeners.
+     * Don't know what to do with types
      */
-    eventNames(): EventTypes[];
+    eventNames(): (keyof EventTypes)[];
     /**
      * Return the listeners registered for a given event.
      */
-    listeners(event: EventTypes): ListenerFn[];
+    listeners<Event extends keyof EventTypes>(iEvent: Event): ListenerFn<Parameters<EventTypes[Event]>>[];
     /**
      * Return the number of listeners listening to a given event.
      */
-    listenerCount(event: EventTypes): number;
+    listenerCount(event: keyof EventTypes): number;
     /**
      * Calls each of the listeners registered for a given event.
      */
-    emit(event: EventTypes, ...args: any[]): boolean;
+    emit<Event extends keyof EventTypes>(iEvent: Event, ...args: Parameters<EventTypes[Event]>): boolean;
     /**
      * Add a listener for a given event.
      */
-    on(event: EventTypes, fn: ListenerFn, context?: any, priority?: number): this;
+    on<Event extends keyof EventTypes>(event: Event, fn: ListenerFn<Parameters<EventTypes[Event]>>, context?: any, priority?: number): this;
     /**
      * Add a one-time listener for a given event.
      */
-    once(event: EventTypes, fn: ListenerFn, context?: any, priority?: number): this;
+    once<Event extends keyof EventTypes>(event: Event, fn: ListenerFn<Parameters<EventTypes[Event]>>, context?: any, priority?: number): this;
     /**
      * Add a listener for a given event.
      */
-    addEventListener(event: EventTypes, fn: ListenerFn, context?: any, once?: boolean, priority?: number): this;
+    addEventListener<Event extends keyof EventTypes>(iEvent: Event, fn: ListenerFn<Parameters<EventTypes[Event]>>, context?: any, once?: boolean, priority?: number): this;
     /**
      * Remove the listeners of a given event.
      */
-    off(event: EventTypes, fn: ListenerFn, context?: any, once?: boolean): void;
+    off<Event extends keyof EventTypes>(event: Event, fn: ListenerFn<Parameters<EventTypes[Event]>>, context?: any, once?: boolean): void;
     /**
      * Remove the listeners of a given event.
      */
-    removeEventListener(event: EventTypes, fn?: ListenerFn, context?: any, once?: boolean, priority?: number): this;
+    removeEventListener<Event extends keyof EventTypes>(iEvent: Event, fn?: ListenerFn<Parameters<EventTypes[Event]>>, context?: any, once?: boolean, priority?: number): this;
     /**
      * Remove all listeners, or those of the specified event.
      */
-    removeAllListeners(event?: EventTypes): this;
+    removeAllListeners(event?: keyof EventTypes): this;
     /**
      * Adds the prefix to the given event name.
      * @param name The event name.
