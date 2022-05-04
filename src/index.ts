@@ -17,7 +17,7 @@ interface Listener<T extends any[]> {
 }
 
 interface ListenerFn<T extends any[]> {
-	(...args: T): void;
+	(eventInfo: { shouldCancel: boolean }, ...args: T): void;
 }
 
 const PREFIX = "~";
@@ -121,13 +121,15 @@ class EventEmitter<EventTypes extends { [event: string | symbol]: (...args: any[
 		if (!events || !events.length) {
 			return false;
 		}
+		const eventInfo = { shouldCancel: false };
 		for (let i = 0; i < events.length; i++) {
 			const currentEvent = events[i];
 			if (currentEvent.once) {
 				events.splice(i, 1);
 				i--;
 			}
-			currentEvent.fn.apply(currentEvent.context, args);
+			currentEvent.fn.apply(currentEvent.context, [eventInfo, ...args]);
+			if (eventInfo.shouldCancel) break;
 		}
 		if (events.length === 0) {
 			delete this._events[event];
